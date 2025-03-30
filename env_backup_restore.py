@@ -67,7 +67,7 @@ def load_environment_variables(env_file: Path) -> dict[str, str] | None:
     """
     try:
         with open(env_file, "r", encoding="utf-8") as file:
-            json.load(file)
+            return json.load(file)
     except FileNotFoundError:
         print(f"Error: File not found: {env_file}", file=sys.stderr)
         return None
