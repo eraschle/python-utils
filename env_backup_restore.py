@@ -10,11 +10,12 @@ import click
 import sys
 import subprocess
 from typing import Any
+from pathlib import Path
 
-GLOBAL_IGNORE_URL = "https://raw.githubusercontent.com/eraschle/python-utils/refs/heads/master/env_backup_global_ignore.json"
+GLOBAL_IGNORE_URL = "https://raw.githubusercontent.com/eraschle/python-utils/refs/heads/master/env_backup_global_ignore.txt"
 
 
-def get_global_ignore_list(fetch_url: str) -> set[str]:
+def get_global_ignore_list(fetch_url: str) -> tuple:
     """Fetches the global ignore list from a URL.
 
     Params:
@@ -25,15 +26,12 @@ def get_global_ignore_list(fetch_url: str) -> set[str]:
     """
     try:
         response = subprocess.run(
-            ["curl", "-s", fetch_url],
-            capture_output=True,
-            text=True,
-            check=True,
+            ["curl", "-s", fetch_url], capture_output=True, text=True, check=True
         )
-        return set(response.stdout.splitlines())
+        return tuple(set(response.stdout.splitlines()))
     except subprocess.CalledProcessError as e:
         print(f"Error fetching global ignore list: {e}", file=sys.stderr)
-        return set()
+        return tuple()
 
 
 def save_environment_variables(env_vars: dict[str, str], env_file: str) -> None:
@@ -45,8 +43,7 @@ def save_environment_variables(env_vars: dict[str, str], env_file: str) -> None:
     """
     try:
         with open(env_file, "w", encoding="utf-8") as f:  # open file for writing
-            json.dump(env_vars, f, indent=4, sort_keys=True)
-        print(f"Successfully saved {len(env_vars)} environment variables to {env_file}")
+            json.dump(env_vars, f, indent=2, sort_keys=True)
     except IOError as e:
         print(
             f"Error: Could not write to file {env_file}. Check permissions or path.",
@@ -59,7 +56,7 @@ def save_environment_variables(env_vars: dict[str, str], env_file: str) -> None:
         sys.exit(1)
 
 
-def load_environment_variables(env_file: str) -> dict[str, str] | None:
+def load_environment_variables(env_file: Path) -> dict[str, str] | None:
     """Load environment variables from a JSON file
 
     Params:
@@ -69,10 +66,8 @@ def load_environment_variables(env_file: str) -> dict[str, str] | None:
     dict: Loaded environment variables.
     """
     try:
-        with open(env_file, "r", encoding="utf-8") as f:  # open file for reading
-            loaded_vars: dict[str, str] = json.load(f)
-        print(f"Successfully loaded {len(loaded_vars)} variables from {env_file}")
-        return loaded_vars
+        with open(env_file, "r", encoding="utf-8") as file:
+            json.load(file)
     except FileNotFoundError:
         print(f"Error: File not found: {env_file}", file=sys.stderr)
         return None
@@ -84,26 +79,18 @@ def load_environment_variables(env_file: str) -> dict[str, str] | None:
         return None
 
 
-def filter_environment_variables(env_to_ignore: list[str]) -> dict[str, str]:
+def _backup_env_vars(env_to_ignore: tuple) -> dict[str, str]:
     """Filters environment variables based on 1Password values and the ignore list."""
     vars_to_store: dict[str, str] = {}
     ignored_names = []
 
     to_ignore = {str(var).lower() for var in env_to_ignore}
-
-    print("Filtering environment variables...")
     for key, value in os.environ.items():
         if key.lower() in to_ignore:
             ignored_names.append(key)
             continue
 
         vars_to_store[key] = value
-
-    print(f"Found {len(vars_to_store)} variables to save.")
-    print(f"Ignored {len(ignored_names)} variables:")
-    for name in ignored_names:
-        print(f"- {name}")
-
     return vars_to_store
 
 
@@ -135,9 +122,9 @@ def cli():
     "--no-global-ignore",
     flag_value=True,
     default=False,
-    help="Disable the global ignore list.",
+    help="Disable the global ignore list. (default: False)",
 )
-def backup(env_file: str, ignore: list, url: str, no_global_ignore: bool) -> None:
+def backup(env_file: str, ignore: tuple, url: str, no_global_ignore: bool) -> None:
     """BACKUP: Saves environment variables to a JSON file, excluding specified variables.
 
     params:
@@ -146,10 +133,16 @@ def backup(env_file: str, ignore: list, url: str, no_global_ignore: bool) -> Non
     url (str): [Optional] URL to fetch the global ignore list. (default: URL of global ignore list from GitHub)
     no_global_ignore (bool): [Optional] Disable the global ignore list (default: False).
     """
-    print("Backup environment variables...")
     if not no_global_ignore:
-        ignore.extend(get_global_ignore_list(url))
-    vars_to_store = filter_environment_variables(env_to_ignore=ignore)
+        global_ignore = get_global_ignore_list(url)
+        ignore = ignore + tuple(global_ignore)
+    print(f"Backup environment variables to {env_file}")
+    vars_to_store = _backup_env_vars(env_to_ignore=ignore)
+    count_env_vars = len(os.environ)
+    count_ignored = count_env_vars - len(vars_to_store)
+    print(f"- Total:   {count_env_vars}")
+    print(f"- Ignored: {count_ignored}")
+    print(f"- Saved:   {len(vars_to_store)}")
     save_environment_variables(vars_to_store, env_file)
 
 
@@ -161,10 +154,7 @@ def set_envvar_linux(env_name: str, value: Any) -> int:
 def set_envvar_windows(env_name: str, value: Any) -> int:
     command = f'setx {env_name} "{value}"'
     process = subprocess.Popen(
-        command,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     return process.wait()
 
@@ -206,7 +196,7 @@ def set_environment_variable(env_name: str, value: Any) -> None:
     flag_value=True,
     help="Overwrite existing environment variables. Default is False.",
 )
-def restore(env_file: str, overwrite: bool) -> None:
+def restore(env_file: Path, overwrite: bool) -> None:
     """RESTORE: Restores environment variables from a JSON file.
     Overrides existing variables if override is set to True.
 
