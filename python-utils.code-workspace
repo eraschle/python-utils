@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.analysis.typeCheckingMode": "basic",
+		"python.analysis.diagnosticMode": "workspace",
+		"python.defaultInterpreterPath": "./venv/Scripts/python"
+	}
+}
