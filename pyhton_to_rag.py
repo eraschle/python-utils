@@ -197,6 +197,7 @@ def _progress_bar(values: list, label: str) -> ContextManager:
 
 
 def index_to_chromadb(elements: list[dict], options: Options) -> None:
+    console = Console()  # Neu: konsistente Ausgabe innerhalb von index_to_chromadb
     client = chromadb.PersistentClient(path=options.ensure_db_exists())
     collection = client.get_or_create_collection(options.collection)
 
@@ -209,7 +210,7 @@ def index_to_chromadb(elements: list[dict], options: Options) -> None:
                     metadatas=[data],
                 )
             except ValueError as exp:
-                click.echo(f"Error: Adding {data} to collection failed: {exp}")
+                console.print(f"[bold red]Error:[/] Adding {data} to collection failed: {exp}")
             bar_index.update(1)
 
 
@@ -228,6 +229,7 @@ def index_to_chromadb(elements: list[dict], options: Options) -> None:
     help="Path to the database.",
 )
 def main(directory: Path, collection: str, db_path: Path) -> None:
+    console = Console()  # Neu: Instance global innerhalb von main
     directory = Path(directory)
     options = Options(
         directory=directory,
@@ -246,7 +248,6 @@ def main(directory: Path, collection: str, db_path: Path) -> None:
                 analyse_error.extend(error)
             files.update(1)
     if analyse_error:
-        console = Console()
         table = Table(title="Fehlerübersicht während der Analyse")
         table.add_column("Index", justify="right", style="cyan", no_wrap=True)
         table.add_column("Fehlermeldung", style="magenta")
@@ -254,7 +255,7 @@ def main(directory: Path, collection: str, db_path: Path) -> None:
             table.add_row(str(idx), msg)
         console.print(table)
     index_to_chromadb(anlaysed_data, options)
-    click.echo(f"Indexed {len(anlaysed_data)} elements into Chromadb.")
+    console.print(f"[bold green]Erfolg:[/] Indexed {len(anlaysed_data)} elements into Chromadb.")
 
 
 if __name__ == "__main__":
