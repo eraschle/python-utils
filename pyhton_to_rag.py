@@ -132,19 +132,37 @@ ANALYSE_FUNCTIONS = [
 ]
 
 
-def analyze_code(file_path: Path) -> list[dict]:
+def _print_error(node: ast.AST, file_path: Path, exp: Exception) -> str:
+    lineno = getattr(node, "lineno", None)
+    if lineno is None:
+        return f"[bold red]Error[/]: {file_path}:\nNode: {node}\nException: {exp}"
+    return f"[bold red]Error[/]: {file_path}:\nNode: {node} at line {lineno}\nException: {exp}"
+
+
+def analyze_code(file_path: Path) -> tuple[list[dict], list[str]]:
+    errors = []
     with file_path.open("r", encoding="utf-8") as f:
         source = f.read()
-    tree = ast.parse(source)
+    try:
+        tree = ast.parse(source, filename=str(file_path.name))
+    except SyntaxError as exp:
+        errors.append(f"[bold red]SyntaxError[/]: {file_path}:\n{exp}")
+        return [], errors
     results = []
     for node in ast.walk(tree):
         analyse = {}
         for analyse_cb in ANALYSE_FUNCTIONS:
-            analyse.update(analyse_cb(node, file_path))
+            try:
+                analyse.update(analyse_cb(node, file_path))
+            except Exception as exp:
+                errors.append(_print_error(node, file_path, exp))
+                continue
         if len(analyse) == 0:
+            node_type = node.__class__.__name__
+            errors.append(f"Unknown node type: {node_type} in {file_path}")
             continue
         results.append(analyse)
-    return results
+    return results, errors
 
 
 def build_doc_id(element: dict) -> str:
@@ -214,14 +232,24 @@ def main(directory: Path, collection: str, db_path: Path) -> None:
         collection=collection,
         db_path=db_path,
     )
-    anlaysed = []
+    anlaysed_data = []
+    analyse_error = []
     py_files = list(directory.rglob("*.py"))
     with _progress_bar(py_files, label="Analyzing") as files:
         for file in files:
-            anlaysed.extend(analyze_code(file))
+            analyse, error = analyze_code(file)
+            if len(analyse) > 0:
+                anlaysed_data.extend(analyse)
+            if len(error) > 0:
+                analyse_error.extend(error)
             files.update(1)
-    index_to_chromadb(anlaysed, options)
-    click.echo(f"Indexed {len(anlaysed)} elements into Chromadb.")
+    if len(analyse_error) > 0:
+        click.echo("Errors found during analysis:")
+        click.echo("===================================")
+        for message in analyse_error:
+            click.echo(f"-> {message}")
+    index_to_chromadb(anlaysed_data, options)
+    click.echo(f"Indexed {len(anlaysed_data)} elements into Chromadb.")
 
 
 if __name__ == "__main__":
