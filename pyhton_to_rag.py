@@ -46,27 +46,34 @@ def analyze_python_file(file_path: Path) -> list[dict]:
     return results
 
 
+def build_doc_id(element: dict) -> str:
+    return f"{element['file']}_{element['class']}_{element['name']}"
+
+
+def build_text_content(element: dict) -> str:
+    if element["type"] == "function":
+        return (
+            f"{element['type']} {element['class']}: def {element['name']}({element['args']}) -> {element['returns']}: "
+            f"docstring: {element['docstring']} "
+            f"at line {element['lineno']} in {element['file']}"
+        )
+    elif element["type"] == "attribute":
+        return (
+            f"{element['class']} {element['type']}: "
+            f"{element['name']} of data type {element['data_type']} "
+            f"at line {element['lineno']} in {element['file']}"
+        )
+    else:
+        raise ValueError("Unbekannter Elementtyp: " + element["type"])
+
+
 def index_to_chromadb(elements: list[dict], collection_name="public_code_elements"):
     client = chromadb.PersistentClient(path="chromadb", database="chromadb")
     collection = client.get_or_create_collection(collection_name)
 
     for element in click.progressbar(elements, label="Indexing elements to RAG"):
-        if element["type"] == "function":
-            doc_id = f"{element['file']}_{element['class']}_{element['name']}"
-            text_content = (
-                f"{element['type']} {element['class']}: def {element['name']} ({element['args']}) -> {element['returns']}: "
-                f"docstring: {element['docstring']} "
-                f"at line {element['lineno']} in {element['file']}"
-            )
-
-        elif element["type"] == "attribute":
-            # Für Attribute verwenden wir den Datentyp als Teil des Textes
-            doc_id = f"{element['file']}_{element['class']}_{element['name']}"
-            text_content = (
-                f"{element['class']} {element['type']}: "
-                f"{element['name']} of data type {element['data_type']} "
-                f"at line {element['lineno']} in {element['file']}"
-            )
+        doc_id = build_doc_id(element)
+        text_content = build_text_content(element)
         collection.add(documents=[text_content], metadatas=[element], ids=[doc_id])
 
 
