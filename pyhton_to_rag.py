@@ -76,7 +76,8 @@ def index_to_chromadb(elements: list[dict], collection_name="public_code_element
 def main(directory):
     directory = Path(directory)
     all_elements = []
-    for py_file in directory.rglob("*.py"):
+    py_files = list(directory.rglob("*.py"))
+    for py_file in click.progressbar(py_files, label="Indexing Python files"):
         all_elements.extend(analyze_python_file(py_file))
     index_to_chromadb(all_elements)
     click.echo(f"Indexed {len(all_elements)} elements into Chromadb.")
