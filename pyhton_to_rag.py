@@ -63,13 +63,26 @@ def _analyse_class(node: ast.AST, file_path: Path) -> dict:
     """Analyse a function node and return its details."""
     if not isinstance(node, ast.ClassDef):
         return {}
-    return {
+    qualified_name = f"{file_path.stem}.{node.name}"
+    # Suche im Klassenkörper nach einem Konstruktor (__init__)
+    constructor = {}
+    for item in node.body:
+        if isinstance(item, ast.FunctionDef) and item.name == "__init__":
+            # Hier rufen wir _analyse_function auf und passen den qualified_name an
+            constructor = _analyse_function(item, file_path)
+            constructor["qualified_name"] = f"{qualified_name}.__init__"
+            break
+    result = {
         "type": CodeType.CLASS,
         "name": node.name,
+        "qualified_name": qualified_name,
         "docstring": get_docstring(node),
         "lineno": node.lineno,
         "file": str(file_path),
     }
+    if constructor:
+        result["constructor"] = constructor
+    return result
 
 
 def _get_arg_string(node: ast.arg) -> str:
@@ -96,10 +109,17 @@ def _analyse_function(node: ast.AST, file_path: Path) -> dict:
     """Analyse a function node and return its details."""
     if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         return {}
+    # Prüfe, ob der Knoten einen Elternteil hat, der eine Klasse ist
+    parent_class = getattr(node, "parent", None)
+    if parent_class and isinstance(parent_class, ast.ClassDef):
+        qualified_name = f"{file_path.stem}.{parent_class.name}.{node.name}"
+    else:
+        qualified_name = f"{file_path.stem}.{node.name}"
     return {
         "type": CodeType.FUNCTION,
         "class": get_class_name(node),
         "name": node.name,
+        "qualified_name": qualified_name,
         "docstring": get_docstring(node),
         "args": _get_function_args(node.args),
         "returns": ast.dump(node.returns) if node.returns else "None",
@@ -147,6 +167,10 @@ def analyze_code(file_path: Path) -> tuple[list[dict], list[str]]:
         source = f.read()
     try:
         tree = ast.parse(source, filename=str(file_path.name))
+        # Neu: Setze für alle Knoten den Verweis auf den Eltern-Knoten
+        for node in ast.walk(tree):
+            for child in ast.iter_child_nodes(node):
+                child.parent = node
     except SyntaxError as exp:
         errors.append(f"[bold red]SyntaxError[/]: {file_path}:\n{exp}")
         return [], errors
