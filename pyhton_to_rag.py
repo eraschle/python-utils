@@ -50,8 +50,7 @@ def index_to_chromadb(elements: list[dict], collection_name="public_code_element
     client = chromadb.PersistentClient(path="chromadb", database="chromadb")
     collection = client.get_or_create_collection(collection_name)
 
-    # Erzeuge aus jedem Element einen eindeutigen ID-String und ein Textdokument
-    for element in elements:
+    for element in click.progressbar(elements, label="Indexing elements to RAG"):
         if element["type"] == "function":
             doc_id = f"{element['file']}_{element['class']}_{element['name']}"
             text_content = (
@@ -77,7 +76,7 @@ def main(directory):
     directory = Path(directory)
     all_elements = []
     py_files = list(directory.rglob("*.py"))
-    for py_file in click.progressbar(py_files, label="Indexing Python files"):
+    for py_file in click.progressbar(py_files, label="Analyzing Python files"):
         all_elements.extend(analyze_python_file(py_file))
     index_to_chromadb(all_elements)
     click.echo(f"Indexed {len(all_elements)} elements into Chromadb.")
