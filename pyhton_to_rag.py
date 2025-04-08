@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import ContextManager
+from rich.console import Console
+from rich.table import Table
 
 import click
 
@@ -243,11 +245,14 @@ def main(directory: Path, collection: str, db_path: Path) -> None:
             if len(error) > 0:
                 analyse_error.extend(error)
             files.update(1)
-    if len(analyse_error) > 0:
-        click.echo("Errors found during analysis:")
-        click.echo("===================================")
-        for message in analyse_error:
-            click.echo(f"-> {message}")
+    if analyse_error:
+        console = Console()
+        table = Table(title="Fehlerübersicht während der Analyse")
+        table.add_column("Index", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Fehlermeldung", style="magenta")
+        for idx, msg in enumerate(analyse_error, start=1):
+            table.add_row(str(idx), msg)
+        console.print(table)
     index_to_chromadb(anlaysed_data, options)
     click.echo(f"Indexed {len(anlaysed_data)} elements into Chromadb.")
 
