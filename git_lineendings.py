@@ -6,24 +6,25 @@
 # ]
 # ///
 import os
-import subprocess
-import shutil
 import platform
+import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 import click
 from rich.console import Console
 
+from git_common import GitOptions as BaseGitOptions
+
 
 @dataclass
-class GitOptions:
-    """Optionen für Git-Operationen."""
+class GitOptions(BaseGitOptions):
+    """Optionen für Git-Operationen zur Zeilenendanpassung."""
 
     extensions: list[str] | None = None
     line_ending: str = "crlf"
     cleanup: bool = True
-    verbose: bool = False
     force: bool = False
     continue_process: bool = True
     should_overwrite: bool = True
@@ -35,7 +36,7 @@ class GitOptions:
 
 def run_git_command(
     console: Console, command: list[str], options: GitOptions, error_message: str
-) -> tuple[bool, subprocess.CompletedProcess | None]:
+) -> tuple[bool, subprocess.CompletedProcess[bytes] | None]:
     """
     Führt einen Git-Befehl aus und gibt das Ergebnis zurück.
 
@@ -166,7 +167,7 @@ def create_gitattributes(console: Console, options: GitOptions) -> bool:
             f"[bold blue]Erstelle .gitattributes für {options.line_ending} Zeilenenden...[/]"
         )
 
-        with open(".gitattributes", "w") as f:
+        with open(".gitattributes", "w", encoding="utf-8") as f:
             # Für jede angegebene Dateiendung eine Regel hinzufügen
             if options.extensions:
                 for ext in options.extensions:
@@ -237,6 +238,17 @@ def reset_changes(console: Console, options: GitOptions) -> bool:
 
 
 def cleanup_git_files(console: Console, directory: Path, options: GitOptions) -> bool:
+    """
+    Löscht Git-spezifische Dateien.
+
+    Args:
+        console: Console-Objekt für die Ausgabe
+        directory: Verzeichnis, in dem die Dateien gelöscht werden sollen
+        options: GitOptions mit Konfigurationsoptionen
+
+    Returns:
+        True bei Erfolg, False bei Fehler
+    """
     # .gitattributes Datei löschen (erstellt durch create_gitattributes)
     # Weitere Dateien, die durch Git-Operationen in create_temp_git_repo erstellt werden könnten
     git_files = [
@@ -261,7 +273,9 @@ def cleanup_git_files(console: Console, directory: Path, options: GitOptions) ->
         return False
 
 
-def overwrite_repository(console: Console, directory: Path, options: GitOptions) -> bool:
+def overwrite_repository(
+    console: Console, directory: Path, options: GitOptions
+) -> bool:
     """
     Überschreibt ein bestehendes Git-Repository, indem das .git Verzeichnis gelöscht wird.
 
@@ -277,7 +291,9 @@ def overwrite_repository(console: Console, directory: Path, options: GitOptions)
     if not git_dir.exists() or not git_dir.is_dir():
         # Kein Repository vorhanden, nichts zu tun
         if options.verbose:
-            console.print("[dim]Kein bestehendes Git-Repository zum Überschreiben gefunden.[/]")
+            console.print(
+                "[dim]Kein bestehendes Git-Repository zum Überschreiben gefunden.[/]"
+            )
         return True
 
     console.print("[bold blue]Überschreibe bestehendes Git-Repository...[/]")
@@ -285,7 +301,17 @@ def overwrite_repository(console: Console, directory: Path, options: GitOptions)
 
 
 def cleanup_git_dir(console: Console, directory: Path, options: GitOptions) -> bool:
-    # .git Verzeichnis löschen (erstellt durch init_git_repo)
+    """
+    Löscht das .git Verzeichnis.
+
+    Args:
+        console: Console-Objekt für die Ausgabe
+        directory: Verzeichnis, in dem das .git Verzeichnis gelöscht werden soll
+        options: GitOptions mit Konfigurationsoptionen
+
+    Returns:
+        True bei Erfolg, False bei Fehler
+    """
     git_dir = directory / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         return True
@@ -489,11 +515,13 @@ def create_git_repo(directory: Path, options: GitOptions) -> None:
     # In das Verzeichnis wechseln
     original_dir = os.getcwd()
     os.chdir(directory)
-    
+
     # Wenn das Repository überschrieben werden soll, lösche das bestehende .git Verzeichnis
     if options.should_overwrite:
         if not overwrite_repository(console, directory, options):
-            console.print("[bold red]Fehler beim Überschreiben des bestehenden Repositories.[/]")
+            console.print(
+                "[bold red]Fehler beim Überschreiben des bestehenden Repositories.[/]"
+            )
             os.chdir(original_dir)
             return
 

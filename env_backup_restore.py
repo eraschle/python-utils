@@ -4,13 +4,14 @@
 #     "click",
 # ]
 # ///
-import os
 import json
-import click
-import sys
+import os
 import subprocess
-from typing import Any
+import sys
 from pathlib import Path
+from typing import Any
+
+import click
 
 GLOBAL_IGNORE_URL = "https://raw.githubusercontent.com/eraschle/python-utils/refs/heads/master/env_backup_global_ignore.txt"
 

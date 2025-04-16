@@ -6,15 +6,15 @@
 #     "rich",
 # ]
 # ///
-import git
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable
+
 import click
+import git
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-
-from typing import Iterable
-from pathlib import Path
-from dataclasses import dataclass
 
 
 @dataclass

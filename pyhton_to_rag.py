@@ -3,8 +3,10 @@
 # dependencies = [
 #     "chromadb",
 #     "click",
+#     "rich",
 # ]
 # ///
+import sys
 import ast
 from dataclasses import dataclass
 from enum import StrEnum
@@ -167,10 +169,9 @@ def analyze_code(file_path: Path) -> tuple[list[dict], list[str]]:
         source = f.read()
     try:
         tree = ast.parse(source, filename=str(file_path.name))
-        # Neu: Setze für alle Knoten den Verweis auf den Eltern-Knoten
         for node in ast.walk(tree):
             for child in ast.iter_child_nodes(node):
-                child.parent = node
+                setattr(child, "parent", node)
     except SyntaxError as exp:
         errors.append(f"[bold red]SyntaxError[/]: {file_path}:\n{exp}")
         return [], errors
@@ -183,21 +184,26 @@ def analyze_code(file_path: Path) -> tuple[list[dict], list[str]]:
             except Exception as exp:
                 errors.append(_print_error(node, file_path, exp))
                 continue
+        # der Code ist hier proziert zu viel ausgabe,
         if len(analyse) == 0:
-            node_type = node.__class__.__name__
-            errors.append(f"Unknown node type: {node_type} in {file_path}")
+            # node_type = node.__class__.__name__
+            # errors.append(f"Unknown node type: {node_type} in {file_path}")
             continue
         results.append(analyse)
     return results, errors
 
 
 def build_doc_id(element: dict) -> str:
+    if "type" not in element:
+        raise ValueError(f"Element {element} has no tyoe informatuin.")
     if element["type"] == CodeType.CLASS:
         return f"{element['file']}_{element['name']}"
     return f"{element['file']}_{element['class']}_{element['name']}"
 
 
 def build_text_content(element: dict) -> str:
+    if "type" not in element:
+        raise ValueError(f"Element {element} has no tyoe informatuin.")
     text_content = [f"{element.get('class', None)}", f"{element.get('name', None)}"]
     if element["type"] == CodeType.CLASS:
         text_content.append(f"docstring: {element['docstring']}")
@@ -226,15 +232,20 @@ def index_to_chromadb(elements: list[dict], options: Options) -> None:
     collection = client.get_or_create_collection(options.collection)
 
     with _progress_bar(elements, label="Indexing") as bar_index:
-        for data in bar_index:
+        for data_dict in bar_index:
+            data_type = data_dict.get("type", None)
+            if not isinstance(data_type, (int, float, str)):
+                data_dict["type"] = str(data_type)
             try:
                 collection.add(
-                    ids=[build_doc_id(data)],
-                    documents=[build_text_content(data)],
-                    metadatas=[data],
+                    ids=[build_doc_id(data_dict)],
+                    documents=[build_text_content(data_dict)],
+                    metadatas=[data_dict],
                 )
             except ValueError as exp:
-                console.print(f"[bold red]Error:[/] Adding {data} to collection failed: {exp}")
+                console.print(
+                    f"[bold red]Error:[/] Adding {data_dict} to collection failed: {exp}"
+                )
             bar_index.update(1)
 
 
@@ -253,6 +264,10 @@ def index_to_chromadb(elements: list[dict], options: Options) -> None:
     help="Path to the database.",
 )
 def main(directory: Path, collection: str, db_path: Path) -> None:
+    if isinstance(directory, str):
+        directory = Path(directory)
+    if isinstance(db_path, str):
+        db_path = Path(db_path)
     console = Console()  # Neu: Instance global innerhalb von main
     directory = Path(directory)
     options = Options(
@@ -271,16 +286,26 @@ def main(directory: Path, collection: str, db_path: Path) -> None:
             if len(error) > 0:
                 analyse_error.extend(error)
             files.update(1)
+        print("No errors during analysis.")
     if analyse_error:
+        print("Errors during analysis:")
         table = Table(title="Fehlerübersicht während der Analyse")
         table.add_column("Index", justify="right", style="cyan", no_wrap=True)
         table.add_column("Fehlermeldung", style="magenta")
         for idx, msg in enumerate(analyse_error, start=1):
             table.add_row(str(idx), msg)
+        console.print("\n\n")
         console.print(table)
+    print("Start indexing to Chromadb...")
     index_to_chromadb(anlaysed_data, options)
-    console.print(f"[bold green]Erfolg:[/] Indexed {len(anlaysed_data)} elements into Chromadb.")
+    console.print(
+        f"[bold green]Erfolg:[/] Indexed {len(anlaysed_data)} elements into Chromadb."
+    )
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 2:
+        sys.argv.append("directory")
+        sys.argv.append("python_code")
+
     main()
