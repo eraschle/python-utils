@@ -1,0 +1,11 @@
+line-length = 120
+
+lint.extend-ignore = [
+    "E402", # Module level import not at top of file§
+    "E501", # Line too long
+    "F401", # Module imported but unused
+    "F841", # Local variable is assigned to but never used
+    "F403", # 'from module import *' used; unable to detect undefined names
+    "F405", # Name may be undefined, or defined from star imports: module
+    "F841", # Local variable is assigned to but never used
+]

@@ -13,7 +13,9 @@ from typing import Any
 
 import click
 
-GLOBAL_IGNORE_URL = "https://raw.githubusercontent.com/eraschle/python-utils/refs/heads/master/env_backup_global_ignore.txt"
+GLOBAL_IGNORE_URL = (
+    "https://raw.githubusercontent.com/eraschle/python-utils/refs/heads/master/env_backup_global_ignore.txt"
+)
 
 
 def get_global_ignore_list(fetch_url: str) -> tuple:
@@ -26,9 +28,7 @@ def get_global_ignore_list(fetch_url: str) -> tuple:
     set: A set of environment variable names to ignore (case-insensitive).
     """
     try:
-        response = subprocess.run(
-            ["curl", "-s", fetch_url], capture_output=True, text=True, check=True
-        )
+        response = subprocess.run(["curl", "-s", fetch_url], capture_output=True, text=True, check=True)
         return tuple(set(response.stdout.splitlines()))
     except subprocess.CalledProcessError as e:
         print(f"Error fetching global ignore list: {e}", file=sys.stderr)
@@ -154,9 +154,7 @@ def set_envvar_linux(env_name: str, value: Any) -> int:
 
 def set_envvar_windows(env_name: str, value: Any) -> int:
     command = f'setx {env_name} "{value}"'
-    process = subprocess.Popen(
-        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return process.wait()
 
 
@@ -169,9 +167,7 @@ def set_environment_variable(env_name: str, value: Any) -> None:
     """
     try:
         if env_name in os.environ:
-            print(
-                f"Updating existing variable {env_name} from {os.environ[env_name]} to {value}"
-            )
+            print(f"Updating existing variable {env_name} from {os.environ[env_name]} to {value}")
         else:
             print(f"Creating new variable {env_name} with value {value}")
         if sys.platform == "win32":

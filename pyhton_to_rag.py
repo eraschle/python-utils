@@ -209,8 +209,7 @@ def build_text_content(element: dict) -> str:
         text_content.append(f"docstring: {element['docstring']}")
     elif element["type"] == CodeType.FUNCTION:
         text_content.append(
-            f"def {element['name']} ({element['args']}) -> {element['returns']}"
-            f"docstring: {element['docstring']}"
+            f"def {element['name']} ({element['args']}) -> {element['returns']}docstring: {element['docstring']}"
         )
     elif element["type"] == CodeType.ATTRIBUTE:
         text_content.append(f"{element['name']}: {element['data_type']}")
@@ -243,9 +242,7 @@ def index_to_chromadb(elements: list[dict], options: Options) -> None:
                     metadatas=[data_dict],
                 )
             except ValueError as exp:
-                console.print(
-                    f"[bold red]Error:[/] Adding {data_dict} to collection failed: {exp}"
-                )
+                console.print(f"[bold red]Error:[/] Adding {data_dict} to collection failed: {exp}")
             bar_index.update(1)
 
 
@@ -298,9 +295,7 @@ def main(directory: Path, collection: str, db_path: Path) -> None:
         console.print(table)
     print("Start indexing to Chromadb...")
     index_to_chromadb(anlaysed_data, options)
-    console.print(
-        f"[bold green]Erfolg:[/] Indexed {len(anlaysed_data)} elements into Chromadb."
-    )
+    console.print(f"[bold green]Erfolg:[/] Indexed {len(anlaysed_data)} elements into Chromadb.")
 
 
 if __name__ == "__main__":

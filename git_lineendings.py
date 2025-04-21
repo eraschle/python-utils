@@ -54,9 +54,7 @@ def run_git_command(
 
         if options.verbose:
             console.print(f"[dim]Befehl: {' '.join(command)}[/]")
-            console.print(
-                f"[dim]Ausgabe: {result.stdout.decode() if result.stdout else 'Keine Ausgabe'}[/]"
-            )
+            console.print(f"[dim]Ausgabe: {result.stdout.decode() if result.stdout else 'Keine Ausgabe'}[/]")
 
         return True, result
     except subprocess.CalledProcessError as e:
@@ -131,9 +129,7 @@ def create_initial_commit(console: Console, options: GitOptions) -> bool:
         return False
 
     if result is None:
-        console.print(
-            "[bold red]Fehler beim Prüfen des Git-Status (Result is NONE).[/]"
-        )
+        console.print("[bold red]Fehler beim Prüfen des Git-Status (Result is NONE).[/]")
         return False
 
     # Wenn keine Änderungen vorhanden sind, gibt es nichts zu committen
@@ -163,9 +159,7 @@ def create_gitattributes(console: Console, options: GitOptions) -> bool:
         True bei Erfolg, False bei Fehler
     """
     try:
-        console.print(
-            f"[bold blue]Erstelle .gitattributes für {options.line_ending} Zeilenenden...[/]"
-        )
+        console.print(f"[bold blue]Erstelle .gitattributes für {options.line_ending} Zeilenenden...[/]")
 
         with open(".gitattributes", "w", encoding="utf-8") as f:
             # Für jede angegebene Dateiendung eine Regel hinzufügen
@@ -175,23 +169,17 @@ def create_gitattributes(console: Console, options: GitOptions) -> bool:
                     f.write(f"{ext_pattern} text eol={options.line_ending}\n")
 
                     if options.verbose:
-                        console.print(
-                            f"[dim]Regel hinzugefügt: {ext_pattern} text eol={options.line_ending}[/]"
-                        )
+                        console.print(f"[dim]Regel hinzugefügt: {ext_pattern} text eol={options.line_ending}[/]")
             else:
                 # Standardregel für alle Textdateien
                 f.write(f"* text eol={options.line_ending}\n")
 
                 if options.verbose:
-                    console.print(
-                        f"[dim]Standardregel hinzugefügt: * text eol={options.line_ending}[/]"
-                    )
+                    console.print(f"[dim]Standardregel hinzugefügt: * text eol={options.line_ending}[/]")
 
         return True
     except Exception as e:
-        console.print(
-            f"[bold red]Fehler beim Erstellen der .gitattributes-Datei:[/] {e}"
-        )
+        console.print(f"[bold red]Fehler beim Erstellen der .gitattributes-Datei:[/] {e}")
         return False
 
 
@@ -273,9 +261,7 @@ def cleanup_git_files(console: Console, directory: Path, options: GitOptions) ->
         return False
 
 
-def overwrite_repository(
-    console: Console, directory: Path, options: GitOptions
-) -> bool:
+def overwrite_repository(console: Console, directory: Path, options: GitOptions) -> bool:
     """
     Überschreibt ein bestehendes Git-Repository, indem das .git Verzeichnis gelöscht wird.
 
@@ -291,9 +277,7 @@ def overwrite_repository(
     if not git_dir.exists() or not git_dir.is_dir():
         # Kein Repository vorhanden, nichts zu tun
         if options.verbose:
-            console.print(
-                "[dim]Kein bestehendes Git-Repository zum Überschreiben gefunden.[/]"
-            )
+            console.print("[dim]Kein bestehendes Git-Repository zum Überschreiben gefunden.[/]")
         return True
 
     console.print("[bold blue]Überschreibe bestehendes Git-Repository...[/]")
@@ -334,9 +318,7 @@ def cleanup_git_dir(console: Console, directory: Path, options: GitOptions) -> b
             return True
 
         # Wenn das Verzeichnis noch existiert, versuche es mit einem externen Befehl
-        console.print(
-            "[yellow]Konnte .git Verzeichnis nicht mit Python löschen, versuche externen Befehl...[/]"
-        )
+        console.print("[yellow]Konnte .git Verzeichnis nicht mit Python löschen, versuche externen Befehl...[/]")
 
         if platform.system() == "Windows":
             # Unter Windows mit rd /s /q
@@ -360,9 +342,7 @@ def cleanup_git_dir(console: Console, directory: Path, options: GitOptions) -> b
             return True
 
         # Wenn auch das nicht funktioniert, gib eine Anleitung zur manuellen Löschung
-        console.print(
-            "[bold yellow]Das .git Verzeichnis konnte nicht automatisch gelöscht werden.[/]"
-        )
+        console.print("[bold yellow]Das .git Verzeichnis konnte nicht automatisch gelöscht werden.[/]")
         console.print(f"Bitte löschen Sie das Verzeichnis manuell: {git_dir}")
         return False
 
@@ -403,9 +383,7 @@ def cleanup_git_repo(
     return cleanup_dir and cleanup_file
 
 
-def overwrite_existing_repo(
-    console: Console, directory: Path, options: GitOptions
-) -> None:
+def overwrite_existing_repo(console: Console, directory: Path, options: GitOptions) -> None:
     """
     Überprüft, ob ein Git-Repository existiert und fragt nach Bestätigung zur Anpassung oder Überschreibung.
 
@@ -429,16 +407,12 @@ def overwrite_existing_repo(
 
     if options.force:
         if options.verbose:
-            console.print(
-                "[dim]Bestehendes Git-Repository wird überschrieben (--force).[/]"
-            )
+            console.print("[dim]Bestehendes Git-Repository wird überschrieben (--force).[/]")
         options.continue_process = True
         options.should_overwrite = True
         return
 
-    console.print(
-        "[bold yellow]Warnung:[/] In diesem Verzeichnis existiert bereits ein Git-Repository."
-    )
+    console.print("[bold yellow]Warnung:[/] In diesem Verzeichnis existiert bereits ein Git-Repository.")
 
     # Frage nach, ob das Repository überschrieben oder angepasst werden soll
     choices = ["Überschreiben", "Anpassen", "Abbrechen"]
@@ -461,9 +435,7 @@ def overwrite_existing_repo(
         return
 
     # Ansonsten: Anpassen
-    console.print(
-        "[bold blue]Zeilenenden im bestehenden Repository werden angepasst...[/]"
-    )
+    console.print("[bold blue]Zeilenenden im bestehenden Repository werden angepasst...[/]")
     options.continue_process = True
     options.should_overwrite = False
 
@@ -507,9 +479,7 @@ def create_git_repo(directory: Path, options: GitOptions) -> None:
 
     # Sicherstellen, dass das Verzeichnis existiert
     if not directory.exists() or not directory.is_dir():
-        console.print(
-            f"[bold red]Fehler:[/] Das Verzeichnis {directory} existiert nicht."
-        )
+        console.print(f"[bold red]Fehler:[/] Das Verzeichnis {directory} existiert nicht.")
         return
 
     # In das Verzeichnis wechseln
@@ -519,9 +489,7 @@ def create_git_repo(directory: Path, options: GitOptions) -> None:
     # Wenn das Repository überschrieben werden soll, lösche das bestehende .git Verzeichnis
     if options.should_overwrite:
         if not overwrite_repository(console, directory, options):
-            console.print(
-                "[bold red]Fehler beim Überschreiben des bestehenden Repositories.[/]"
-            )
+            console.print("[bold red]Fehler beim Überschreiben des bestehenden Repositories.[/]")
             os.chdir(original_dir)
             return
 
@@ -637,13 +605,9 @@ def main(
             console.print(f"[bold]Dateiendungen:[/] {', '.join(extensions)}")
         else:
             console.print("[bold]Dateiendungen:[/] Alle Textdateien")
-        console.print(
-            f"[bold]Git-Repository behalten:[/] {'Ja' if keep_git else 'Nein'}"
-        )
+        console.print(f"[bold]Git-Repository behalten:[/] {'Ja' if keep_git else 'Nein'}")
         console.print(f"[bold]Force-Modus:[/] {'Ja' if force else 'Nein'}")
-        console.print(
-            f"[bold]Datei-Explorer öffnen:[/] {'Ja' if open_explorer else 'Nein'}"
-        )
+        console.print(f"[bold]Datei-Explorer öffnen:[/] {'Ja' if open_explorer else 'Nein'}")
 
     # Liste der Dateiendungen erstellen
     ext_list = []
