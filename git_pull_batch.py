@@ -114,9 +114,7 @@ def stash_changes(repo: git.Git, options: GitOptions | None = None) -> None:
 
     if console and "No local changes to save" not in result:
         repo_path = Path(repo.rev_parse("--show-toplevel"))
-        console.print(
-            f"[yellow]⟳[/yellow] Stashed changes in [bold]{repo_path.name}[/bold]"
-        )
+        console.print(f"[yellow]⟳[/yellow] Stashed changes in [bold]{repo_path.name}[/bold]")
         if verbose:
             console.print(f"[blue]ℹ[/blue] Stash result: {result}")
 
@@ -164,9 +162,7 @@ def restore_stashed_changes(repo: git.Git, options: GitOptions | None = None) ->
         return
 
     repo_path = Path(repo.rev_parse("--show-toplevel"))
-    console.print(
-        f"[yellow]⟲[/yellow] Restored stashed changes in [bold]{repo_path.name}[/bold]"
-    )
+    console.print(f"[yellow]⟲[/yellow] Restored stashed changes in [bold]{repo_path.name}[/bold]")
 
     if verbose and console:
         console.print(f"[blue]ℹ[/blue] Stash pop result: {result}")
@@ -227,9 +223,7 @@ def process_git_repo(repo_path: Path, options: GitOptions) -> tuple[int, int]:
 
     try:
         if verbose and console:
-            console.print(
-                f"[blue]ℹ[/blue] Processing repository: [bold]{repo_path}[/bold]"
-            )
+            console.print(f"[blue]ℹ[/blue] Processing repository: [bold]{repo_path}[/bold]")
 
         # Create a new options object with the stash message for this repo
         pull_options = GitOptions(
@@ -243,9 +237,7 @@ def process_git_repo(repo_path: Path, options: GitOptions) -> tuple[int, int]:
 
         if console:
             if verbose:
-                console.print(
-                    f"[blue]ℹ[/blue] Pull output for [bold]{repo_path.name}[/bold]:"
-                )
+                console.print(f"[blue]ℹ[/blue] Pull output for [bold]{repo_path.name}[/bold]:")
                 console.print(Panel(pull_output, title="Git Pull Output", expand=False))
             else:
                 console.print(f"[green]✓[/green] Pulled [bold]{repo_path.name}[/bold]")
@@ -253,16 +245,12 @@ def process_git_repo(repo_path: Path, options: GitOptions) -> tuple[int, int]:
         return 1, 0
     except Exception as e:
         if console:
-            console.print(
-                f"[red]✗[/red] Failed to pull [bold]{repo_path.name}[/bold]: {e}"
-            )
+            console.print(f"[red]✗[/red] Failed to pull [bold]{repo_path.name}[/bold]: {e}")
             if verbose:
                 import traceback
 
                 console.print("[red]Error details:[/red]")
-                console.print(
-                    Panel(traceback.format_exc(), title="Error Traceback", expand=False)
-                )
+                console.print(Panel(traceback.format_exc(), title="Error Traceback", expand=False))
         return 0, 1
 
 
@@ -294,9 +282,7 @@ def pull_repositories(current: Path, options: GitOptions) -> tuple[int, int]:
 
     if is_git_repository(current):
         if verbose and console:
-            console.print(
-                f"[blue]ℹ[/blue] Found git repository at [bold]{current}[/bold]"
-            )
+            console.print(f"[blue]ℹ[/blue] Found git repository at [bold]{current}[/bold]")
         s, f = process_git_repo(current, options)
         successful += s
         failed += f
@@ -306,16 +292,12 @@ def pull_repositories(current: Path, options: GitOptions) -> tuple[int, int]:
         subdirs = list(get_subdirectories(current))
 
         if verbose and console:
-            console.print(
-                f"[blue]ℹ[/blue] Found {len(subdirs)} subdirectories in [bold]{current}[/bold]"
-            )
+            console.print(f"[blue]ℹ[/blue] Found {len(subdirs)} subdirectories in [bold]{current}[/bold]")
 
         for path in subdirs:
             if is_git_repository(path):
                 if verbose and console:
-                    console.print(
-                        f"[blue]ℹ[/blue] Found git repository at [bold]{path}[/bold]"
-                    )
+                    console.print(f"[blue]ℹ[/blue] Found git repository at [bold]{path}[/bold]")
                 s, f = process_git_repo(path, options)
                 successful += s
                 failed += f
@@ -328,9 +310,7 @@ def pull_repositories(current: Path, options: GitOptions) -> tuple[int, int]:
                 found_repos = found_repos or (s > 0 or f > 0)
 
         if not found_repos and not recursive and console:
-            console.print(
-                f"[yellow]![/yellow] No git repositories found in [bold]{current}[/bold]."
-            )
+            console.print(f"[yellow]![/yellow] No git repositories found in [bold]{current}[/bold].")
 
     return successful, failed
 
