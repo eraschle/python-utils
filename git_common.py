@@ -1,8 +1,8 @@
 """
-Gemeinsame Git-Funktionalitäten für verschiedene Skripte.
+Common Git functionalities for various scripts.
 
-Dieses Modul enthält gemeinsame Klassen und Funktionen, die von verschiedenen
-Git-bezogenen Skripten im python-utils Projekt verwendet werden können.
+This module contains common classes and functions that can be used by various
+Git-related scripts in the python-utility project.
 """
 
 from dataclasses import dataclass
@@ -14,31 +14,31 @@ from rich.console import Console
 
 @dataclass
 class GitOptions:
-    """Basisklasse für Git-Operationsoptionen."""
+    """Base class for Git operation options."""
 
-    console: Optional[Console] = None  # Console-Objekt für die Ausgabe
-    verbose: bool = False  # Ausführliche Ausgabe anzeigen
-    recursive: bool = False  # Rekursiv in Unterverzeichnissen suchen
+    console: Optional[Console] = None  # Console object for output
+    verbose: bool = False  # Show verbose output
+    recursive: bool = False  # Search recursively in subdirectories
 
-    # Liste mit Feldnamen, die beim Vergleich ignoriert werden sollen
+    # List of field names to ignore during comparison
     def __eq__(self, other):
         if not isinstance(other, GitOptions):
             return False
 
-        # Vergleiche nur die Attribute, die in beiden Klassen definiert sind
+        # Compare only attributes defined in both classes
         attrs = set(self.__annotations__).intersection(set(other.__annotations__))
         return all(getattr(self, attr) == getattr(other, attr) for attr in attrs)
 
 
 def is_git_repository(path: Path) -> bool:
     """
-    Prüft, ob ein Verzeichnis ein Git-Repository ist.
+    Checks if a directory is a Git repository.
 
     Args:
-        path: Pfad zum zu prüfenden Verzeichnis
+        path: Path to the directory to check
 
     Returns:
-        True, wenn das Verzeichnis ein Git-Repository ist, sonst False
+        True if the directory is a Git repository, otherwise False
     """
     git_dir = path / ".git"
     return git_dir.exists() and git_dir.is_dir()
@@ -46,12 +46,12 @@ def is_git_repository(path: Path) -> bool:
 
 def get_subdirectories(path: Path) -> List[Path]:
     """
-    Gibt alle Unterverzeichnisse des angegebenen Pfads zurück.
+    Returns all subdirectories of the specified path.
 
     Args:
-        path: Pfad, in dem nach Unterverzeichnissen gesucht werden soll
+        path: Path where to search for subdirectories
 
     Returns:
-        Liste der gefundenen Unterverzeichnisse
+        List of found subdirectories
     """
     return [item for item in path.iterdir() if item.is_dir()]

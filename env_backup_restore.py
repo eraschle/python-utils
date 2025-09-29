@@ -173,7 +173,7 @@ def set_environment_variable(env_name: str, value: Any) -> None:
         if sys.platform == "win32":
             set_envvar_windows(env_name, value)
         elif sys.platform == "linux":
-            return set_envvar_linux(env_name, value)
+            set_envvar_linux(env_name, value)
         else:
             print(f"Unsupported platform: {sys.platform}", file=sys.stderr)
             sys.exit(1)

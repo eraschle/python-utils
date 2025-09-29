@@ -67,13 +67,13 @@ class TestUnit:
         """Test dass Unit frozen ist (unveränderlich)."""
         unit = Unit("Millimeter", "mm", UnitType.LENGTH, 0.001)
         with pytest.raises(AttributeError):
-            unit.name = "Centimeter"
+            unit.name = "Centimeter"  # pyright: ignore[reportAttributeAccessIssue]
         with pytest.raises(AttributeError):
-            unit.symbol = "cm"
+            unit.symbol = "cm"  # pyright: ignore[reportAttributeAccessIssue]
         with pytest.raises(AttributeError):
-            unit.unit_type = UnitType.AREA
+            unit.unit_type = UnitType.AREA  # pyright: ignore[reportAttributeAccessIssue]
         with pytest.raises(AttributeError):
-            unit.base_factor = 0.01
+            unit.base_factor = 0.01  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_unit_equality(self):
         """Test Gleichheit von Units."""

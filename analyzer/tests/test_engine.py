@@ -261,13 +261,13 @@ class TestDataClassificationEngine:
     def test_invalid_data_format(self):
         """Test mit ungültigem Datenformat."""
         with pytest.raises(ValueError):
-            self.engine.analyze("invalid data")
+            self.engine.analyze("invalid data")  # pyright: ignore[reportArgumentType]
 
         with pytest.raises(ValueError):
-            self.engine.analyze(123)
+            self.engine.analyze(123)  # pyright: ignore[reportArgumentType]
 
         with pytest.raises(ValueError):
-            self.engine.analyze(None)
+            self.engine.analyze(None)  # pyright: ignore[reportArgumentType]
 
     def test_analyze_dataframe_method(self):
         """Test die spezifische analyze_dataframe Methode."""

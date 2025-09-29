@@ -47,12 +47,12 @@ if not log.handlers:
 class UnitType(Enum):
     NONE = "none"  # Keine Einheit
     UNKNOWN = "unknown"  # Unbekannte Einheit
-    LENGTH = "length"  # Laenge (mm, cm, m, km)
-    AREA = "area"  # Flaeche (mm², cm², m²)
+    LENGTH = "length"  # Länge (mm, cm, m, km)
+    AREA = "area"  # Fläche (mm², cm², m²)
     VOLUME = "volume"  # Volumen (mm³, cm³, m³, l)
     MASS = "mass"  # Masse/Gewicht (g, kg, t)
-    CURRENCY = "currency"  # Waehrung (Euro, Dollar, etc.)
-    QUANTITY = "quantity"  # Anzahl/Stueckzahl (Stk, Pieces)
+    CURRENCY = "currency"  # Währung (Euro, Dollar, etc.)
+    QUANTITY = "quantity"  # Anzahl/Stückzahl (Stk, Pieces)
     TIME = "time"  # Zeit (s, min, h)
     PRESSURE = "pressure"  # Druck (Pa, bar, psi)
     TEMPERATURE = "temperature"  # Temperatur (°C, °F, K)
@@ -155,7 +155,7 @@ class Unit:
     Examples
     --------
     >>> mm = Unit("Millimeter", "mm", UnitType.LENGTH, 0.001)
-    >>> print(mm.convertable)  # True
+    >>> print(mm.convertible)  # True
     >>> print(str(mm))  # "mm"
     """
 
@@ -163,7 +163,7 @@ class Unit:
     symbol: str = field(compare=True)
     unit_type: UnitType = field(compare=True)
     base_factor: float = field(default=1.0, compare=False)
-    convert_func: Callable[[float], float] = field(default=None, compare=False)
+    convert_func: Callable[[float], float] | None = field(default=None, compare=False)
 
     @property
     def is_unknown(self) -> bool:
@@ -927,7 +927,7 @@ class TypeInference:
                 if success_ratio >= self.numeric_threshold and len(valid_numerics) > 0:
                     # Check if we have nulls in original series
                     has_nulls = series.isna().any()
-                    all_integers = valid_numerics.apply(lambda x: x % 1 == 0).all()
+                    all_integers = bool(valid_numerics.apply(lambda x: x % 1 == 0).all())
 
                     # Logic:
                     # 1. If float64 dtype WITHOUT nulls → real floats → FLOAT
@@ -1038,7 +1038,7 @@ class BaseClassifier(ABC):
         """
         # 1. Unit extraction (once per column)
         unit = self._extract_unit_from_name(column_name.lower())
-        # 2. Type inference (vectorized on entire series)
+        # 2. Type inference (vectored on entire series)
         data_type = self.type_inference.infer_type(column_name, series)
         if unit.is_unknown and data_type not in (DataType.UNKNOWN,):
             unit = Units.NONE
@@ -1052,7 +1052,7 @@ class BaseClassifier(ABC):
         # Count non-convertible values for numeric types
         if data_type in (DataType.INTEGER, DataType.FLOAT) and total_values > 0:
             numeric_result = pd.to_numeric(clean_series, errors="coerce")
-            non_convertible_count = numeric_result.isna().sum()
+            non_convertible_count = numeric_result.isna().sum()  # pyright: ignore[reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue,reportAttributeAccessIssue]
 
         # 4. Confidence calculation (array-based statistics)
         confidence = self._calculate_confidence(column_name, series, data_type, unit)

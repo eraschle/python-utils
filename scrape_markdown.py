@@ -20,57 +20,57 @@ from firecrawl.firecrawl import MapParams, ScrapeResponse
 
 
 def sanitize_filename(url: str) -> str:
-    """Erstellt einen gültigen Dateinamen aus einer URL."""
+    """Creates a valid filename from a URL."""
     parsed_url = urlparse(url)
-    # Nimm den Pfad und ersetze ungültige Zeichen
+    # Take the path and replace invalid characters
     filename = parsed_url.path.strip("/")
     filename = re.sub(r'[<>:"/\\|?*]', "_", filename)
-    # Füge .md hinzu, wenn es fehlt
+    # Add .md if it's missing
     if not filename.endswith(".md"):
         filename += ".md"
-    # Handle leere Dateinamen (z.B. für Root-URL)
+    # Handle empty filenames (e.g., for root URL)
     if not filename or filename == ".md":
         filename = f"{parsed_url.netloc}.md"
-        filename = re.sub(r'[<>:"/\\|?*]', "_", filename)  # Erneut säubern
+        filename = re.sub(r'[<>:"/\\|?*]', "_", filename)  # Clean again
     return filename
 
 
 def show_current_url(item):
-    """Gibt eine gekürzte Version der URL für die Progressbar zurück."""
+    """Returns a shortened version of the URL for the progress bar."""
     if not item:
         return ""
 
-    # Definiere maximale Längen
-    max_visible_segments = 2  # Anzahl der Pfadsegmente am Ende, die sichtbar bleiben
-    max_total_len = 70  # Maximale Gesamtlänge der Anzeige-URL
+    # Define maximum lengths
+    max_visible_segments = 2  # Number of path segments at the end that remain visible
+    max_total_len = 70  # Maximum total length of the display URL
     try:
         url_str = str(item)
         parsed = urlparse(url_str)
         path = parsed.path
 
-        # Handle einfache Fälle (kein Pfad oder nur Root)
+        # Handle simple cases (no path or only root)
         if not path or path == "/":
-            # Kürze ggf. die Basis-URL, falls sie allein schon zu lang ist
+            # Shorten the base URL if it's already too long
             if len(url_str) > max_total_len:
                 return url_str[: max_total_len - 3] + "..."
             return url_str
 
-        # Zerlege den Pfad in Segmente (ignoriere leere Teile durch führende/folgende '/')
+        # Split the path into segments (ignore empty parts due to leading/trailing '/')
         segments = [s for s in path.split("/") if s]
 
-        shortened_url = url_str  # Standard ist die Original-URL
+        shortened_url = url_str  # Default is the original URL
 
         if len(segments) > max_visible_segments:
-            # Behalte die letzten 'max_visible_segments'
+            # Keep the last 'max_visible_segments'
             visible_part = "/".join(segments[-max_visible_segments:])
-            # Konstruiere den gekürzten Pfad
-            # Füge führenden Slash hinzu, wenn der Originalpfad damit begann
+            # Construct the shortened path
+            # Add leading slash if the original path started with it
             shortened_path = ("/" if path.startswith("/") else "") + ".../" + visible_part
-            # Füge abschließenden Slash hinzu, wenn der Originalpfad damit endete UND es nicht nur der Root-Slash war
+            # Add trailing slash if the original path ended with it AND it wasn't just the root slash
             if path.endswith("/") and len(segments) > 0:
                 shortened_path += "/"
 
-            # Baue die URL wieder zusammen
+            # Reconstruct the URL
             shortened_url = urlunparse(
                 (
                     parsed.scheme,
@@ -82,35 +82,35 @@ def show_current_url(item):
                 )
             )
 
-        # Finale Längenprüfung und Kürzung, falls nötig
+        # Final length check and shortening if necessary
         if len(shortened_url) > max_total_len:
-            # Kürze vom Anfang des Pfades her, um das Ende sichtbar zu halten
-            # Finde den Start des Pfades in der gekürzten URL
+            # Shorten from the beginning of the path to keep the end visible
+            # Find the start of the path in the shortened URL
             path_start_index = len(parsed.scheme) + 3 + len(parsed.netloc)  # '://' = 3
             if path_start_index < len(shortened_url):
-                # Berechne, wie viel vom Anfang (Schema + Host + Pfad-Anfang) gezeigt werden kann
+                # Calculate how much of the beginning (scheme + host + path beginning) can be shown
                 keep_len = (
                     max_total_len - (len(shortened_url) - path_start_index) - 3
                 )  # -3 für "..."
-                if keep_len < path_start_index + 5:  # Mindestens Host + ein bisschen Pfad zeigen
-                    # Wenn zu kurz, einfach von vorne kürzen
+                if keep_len < path_start_index + 5:  # Show at least host + a bit of path
+                    # If too short, just shorten from the front
                     return shortened_url[: max_total_len - 3] + "..."
                 else:
-                    # Kürze intelligent, behalte Anfang und Ende
+                    # Shorten intelligently, keep beginning and end
                     return (
                         shortened_url[:path_start_index]
                         + "..."
                         + shortened_url[-(max_total_len - path_start_index - 3) :]
                     )
 
-            else:  # Sollte nicht passieren, aber als Fallback
+            else:  # Shouldn't happen, but as fallback
                 return shortened_url[: max_total_len - 3] + "..."
 
         else:
             return shortened_url
 
     except Exception:
-        # Fallback bei unerwarteten Fehlern (z.B. ungültige URL)
+        # Fallback for unexpected errors (e.g., invalid URL)
         url_str = str(item)
         if len(url_str) > max_total_len:
             return url_str[: max_total_len - 3] + "..."
@@ -119,17 +119,17 @@ def show_current_url(item):
 
 def search_urls(app: FirecrawlApp, url: str, search: str) -> list[str]:
     """
-    Durchsucht eine Start-URL nach einem Begriff mit Firecrawl.
+    Searches a start URL for a term using Firecrawl.
 
     Args:
-        app: Die initialisierte FirecrawlApp Instanz.
-        url: Die zu durchsuchende Start-URL.
-        search: Der Suchbegriff.
+        app: The initialized FirecrawlApp instance.
+        url: The start URL to search.
+        search: The search term.
 
     Returns:
-        Eine Liste der gefundenen URLs oder eine leere Liste bei Fehlern oder keinen Ergebnissen.
+        A list of found URLs or an empty list on errors or no results.
     """
-    click.echo(f"Durchsuche '{url}' nach '{search}'...")
+    click.echo(f"Searching '{url}' for '{search}'...")
     try:
         map_result = app.map_url(
             url,
@@ -141,60 +141,60 @@ def search_urls(app: FirecrawlApp, url: str, search: str) -> list[str]:
             ),
         )
         if not map_result:
-            click.echo("Keine passenden URLs gefunden (map_result ist leer).")
+            click.echo("No matching URLs found (map_result is empty).")
             return []
 
         if not map_result.success:
             click.echo(
-                "Fehler bei der API-Anfrage. Überprüfen Sie die URL und den API-Schlüssel.",
+                "Error with API request. Check the URL and API key.",
                 err=True,
             )
             return []
 
         found_urls = map_result.links
         if not found_urls:
-            click.echo("Keine URLs im map_result gefunden.")
+            click.echo("No URLs found in map_result.")
             return []
 
-        click.echo(f"{len(found_urls)} URLs gefunden.")
+        click.echo(f"{len(found_urls)} URLs found.")
         return found_urls
 
     except Exception as e:
-        click.echo(f"Fehler bei map_url: {e}", err=True)
+        click.echo(f"Error with map_url: {e}", err=True)
         return []
 
 
 def sanitize_title_to_filename(title: Optional[str], fallback_url: str) -> str:
     """
-    Erstellt einen gültigen Dateinamen aus einem Seitentitel.
-    Verwendet sanitize_filename(fallback_url) als Fallback, wenn kein Titel vorhanden ist.
+    Creates a valid filename from a page title.
+    Uses sanitize_filename(fallback_url) as fallback if no title is present.
     """
-    # Fallback, wenn Titel None, leer oder nur Leerzeichen ist
+    # Fallback if title is None, empty, or only whitespace
     if not title or title.isspace():
         click.echo(
-            f"\nWarnung: Kein Titel für URL {fallback_url} gefunden. Verwende URL für Dateinamen.",
+            f"\nWarning: No title found for URL {fallback_url}. Using URL for filename.",
             err=True,
         )
-        return sanitize_filename(fallback_url)  # Verwende die bestehende URL-Sanitizer-Funktion
+        return sanitize_filename(fallback_url)  # Use the existing URL sanitizer function
 
-    # Ersetze ungültige Zeichen im Titel
-    # Erlaube Leerzeichen und ersetze sie später durch Unterstriche
+    # Replace invalid characters in title
+    # Allow spaces and replace them later with underscores
     filename = re.sub(r'[<>:"/\\|?*]', "_", title)
-    # Ersetze mehrere Leerzeichen/Unterstriche durch einen einzigen Unterstrich
+    # Replace multiple spaces/underscores with a single underscore
     filename = re.sub(r"[\s_]+", "_", filename).strip("_")
 
-    # Optional: Länge begrenzen (z.B. auf 100 Zeichen)
+    # Optional: Limit length (e.g., to 100 characters)
     max_len = 100
     if len(filename) > max_len:
         filename = filename[:max_len].strip("_")
 
-    # Füge .md hinzu
+    # Add .md
     filename += ".md"
 
-    # Handle sehr kurze oder leere Namen nach der Bereinigung
-    if filename == ".md" or len(filename) < 4:  # ".md" ist 3 Zeichen lang
+    # Handle very short or empty names after cleaning
+    if filename == ".md" or len(filename) < 4:  # ".md" is 3 characters long
         click.echo(
-            f"\nWarnung: Konnte keinen gültigen Titel-basierten Namen für URL {fallback_url} generieren. Verwende URL.",
+            f"\nWarning: Could not generate valid title-based name for URL {fallback_url}. Using URL.",
             err=True,
         )
         return sanitize_filename(fallback_url)
@@ -212,21 +212,21 @@ def _get_page_title(scrape_response: ScrapeResponse) -> str | None:
 
 def scrape_and_save_markdown(app: FirecrawlApp, urls: list[str], output_path: Path) -> None:
     """
-    Scrapt eine Liste von URLs, extrahiert den Markdown-Inhalt und speichert ihn in Dateien.
+    Scrapes a list of URLs, extracts the Markdown content, and saves it to files.
 
     Args:
-        app: Die initialisierte FirecrawlApp Instanz.
-        urls: Eine Liste von URLs, die gescraped werden sollen.
-        output_path: Der Pfad zum Verzeichnis, in dem die Markdown-Dateien gespeichert werden sollen.
+        app: The initialized FirecrawlApp instance.
+        urls: A list of URLs to scrape.
+        output_path: The path to the directory where Markdown files should be saved.
     """
-    # Stelle sicher, dass das Output-Verzeichnis existiert
+    # Ensure the output directory exists
     output_path.mkdir(parents=True, exist_ok=True)
-    click.echo(f"Speichere {len(urls)} Markdown-Dateien in: {output_path.resolve()}")
+    click.echo(f"Saving {len(urls)} Markdown files to: {output_path.resolve()}")
 
-    # Verwende click.progressbar mit Anzeige der URL
+    # Use click.progressbar with URL display
     with progressbar(urls, label="Scraping URLs", item_show_func=show_current_url) as bar:
         for found_url in bar:
-            scrape_response = None  # Initialisieren für den Fall eines frühen Fehlers
+            scrape_response = None  # Initialize in case of early error
             try:
                 scrape_response = app.scrape_url(
                     url=found_url,
@@ -234,11 +234,11 @@ def scrape_and_save_markdown(app: FirecrawlApp, urls: list[str], output_path: Pa
                     only_main_content=True,
                 )
             except Exception as e:
-                click.echo(f"\nFehler beim Scrapen von {found_url}: {e}", err=True)
+                click.echo(f"\nError scraping {found_url}: {e}", err=True)
                 continue
 
             if scrape_response is None or scrape_response.markdown is None:
-                click.echo(f"\nKein Markdown-Inhalt für {found_url} gefunden.", err=True)
+                click.echo(f"\nNo Markdown content found for {found_url}.", err=True)
                 continue
 
             markdown_content = scrape_response.markdown
@@ -250,7 +250,7 @@ def scrape_and_save_markdown(app: FirecrawlApp, urls: list[str], output_path: Pa
                     f.write(markdown_content)
             except OSError as e:
                 click.echo(
-                    f"\nFehler beim Schreiben der Datei {filepath.name} für URL {found_url}: {e}",
+                    f"\nError writing file {filepath.name} for URL {found_url}: {e}",
                     err=True,
                 )
 
@@ -263,34 +263,34 @@ def scrape_and_save_markdown(app: FirecrawlApp, urls: list[str], output_path: Pa
     "--api-key",
     type=str,
     default=None,
-    help="Firecrawl API Key. Falls nicht angegeben, wird die Umgebungsvariable FIRECRAWL_API_KEY verwendet.",
+    help="Firecrawl API Key. If not provided, the FIRECRAWL_API_KEY environment variable will be used.",
 )
 def main(url: str, search: str, output_path: Path, api_key: Optional[str]):
     """
-    Durchsucht eine Start-URL nach einem Begriff mit Firecrawl, lädt die
-    gefundenen Seiten als Markdown herunter und speichert sie im OUTPUT_PATH.
+    Searches a start URL for a term using Firecrawl, downloads the
+    found pages as Markdown and saves them to OUTPUT_PATH.
     """
     resolved_api_key = api_key or os.environ.get("FIRECRAWL_API_KEY")
 
     if not resolved_api_key:
         click.echo(
-            "Fehler: API-Schlüssel nicht gefunden. Bitte über --api-key oder die Umgebungsvariable FIRECRAWL_API_KEY angeben.",
+            "Error: API key not found. Please provide via --api-key or the FIRECRAWL_API_KEY environment variable.",
             err=True,
         )
         return
 
     app = FirecrawlApp(api_key=resolved_api_key)
 
-    # Schritt 1: URLs suchen
+    # Step 1: Search for URLs
     found_urls = search_urls(app, url, search)
 
-    # Schritt 2: Markdown scrapen und speichern, wenn URLs gefunden wurden
+    # Step 2: Scrape Markdown and save if URLs were found
     if found_urls:
         scrape_and_save_markdown(app, found_urls, output_path)
     else:
-        click.echo("Keine URLs zum Scrapen gefunden.")
+        click.echo("No URLs found to scrape.")
 
-    click.echo("Vorgang abgeschlossen.")
+    click.echo("Process completed.")
 
 
 if __name__ == "__main__":

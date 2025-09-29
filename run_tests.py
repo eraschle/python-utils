@@ -71,7 +71,7 @@ class TestRunner:
         self.test_suites = test_suites
         return test_suites
 
-    def run_single_test_suite(self, suite: TestSuite, verbose: bool = False, extra_args: List[str] = None) -> bool:
+    def run_single_test_suite(self, suite: TestSuite, verbose: bool = False, extra_args: list[str] | None = None) -> bool:
         """Run a single test suite."""
         extra_args = extra_args or []
 
@@ -126,7 +126,7 @@ class TestRunner:
             print(f"❌ {suite.name}: Error running tests - {e}")
             return False
 
-    def run_all_tests(self, verbose: bool = False, extra_args: List[str] = None) -> Dict[str, bool]:
+    def run_all_tests(self, verbose: bool = False, extra_args: list[str] | None = None) -> Dict[str, bool]:
         """Run all discovered test suites."""
         if not self.test_suites:
             print("🔍 No test suites discovered!")
@@ -142,7 +142,7 @@ class TestRunner:
 
         return results
 
-    def run_specific_test(self, test_name: str, verbose: bool = False, extra_args: List[str] = None) -> bool:
+    def run_specific_test(self, test_name: str, verbose: bool = False, extra_args: List[str] | None = None) -> bool:
         """Run a specific test suite by name."""
         suite = next((s for s in self.test_suites if s.name == test_name), None)
 
